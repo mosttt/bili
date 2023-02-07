@@ -1,6 +1,4 @@
-use std::time::Duration;
 use clap::{CommandFactory, Parser, Subcommand};
-use qrcode::QrCode;
 use crate::{download, user};
 
 #[derive(Parser)]

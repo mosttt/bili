@@ -1,12 +1,10 @@
 use qrcode::QrCode;
 use tokio::time;
 use console::{Emoji, style};
-use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::time::Duration;
 use bilirust::{from_str, WebToken};
 use image::Luma;
-use regex::internal::Input;
 use crate::local;
 
 

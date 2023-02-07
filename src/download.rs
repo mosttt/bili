@@ -1,8 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 use bilirust::{Audio, FNVAL_DASH, FNVAL_MP4, Video, VIDEO_QUALITY_4K};
 use lazy_static::lazy_static;
 use crate::{local, user};
-use console::{Emoji, style};
+use console::{Emoji};
 use dialoguer::Select;
 
 lazy_static! {
