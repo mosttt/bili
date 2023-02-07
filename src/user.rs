@@ -58,7 +58,7 @@ pub(crate) async fn login(is_console: &bool) -> crate::Result<()> {
     Ok(())
 }
 
-async fn login_client() -> crate::Result<bilirust::Client> {
+pub(crate) async fn login_client() -> crate::Result<bilirust::Client> {
     let property = local::load_property("web_token".to_owned()).await?;
     if &property == "" {
         println!("{}", style("需要登录!").cyan().bold());

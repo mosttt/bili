@@ -23,12 +23,20 @@ enum Commands {
 
     /// download from url
     Download {
+        /// url to download from bilibili
+        #[arg(value_parser = check_download_url)]
         url: String
     },
 }
 
-pub(crate) async fn run() -> crate::Result<()> {
+fn check_download_url(s: &str) -> crate::Result<String> {
+    if !(s.contains("http://") || s.contains("https://")) {
+        return Err(anyhow::Error::msg("not valid url"))
+    };
+    Ok(s.replace("http://", "https://"))
+}
 
+pub(crate) async fn run() -> crate::Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
