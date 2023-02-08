@@ -31,6 +31,14 @@ enum Commands {
         /// 断点续传，必须选择和上次一样的清晰度，否则会出现视频无法使用的情况。
         #[arg(short,long,action = clap::ArgAction::SetTrue)]
         resume: bool,
+
+        ///  使用url解析剧集数据而不是id, 有的剧集下不了加上这个试试 (对集合类视频有效，对BV无效)
+        #[arg(short,long,action = clap::ArgAction::SetTrue)]
+        parse_input_url: bool,
+
+        /// 加上这个可以选择要下载的seasons, 而不是全部的seasons
+        #[arg(short,long,action = clap::ArgAction::SetTrue)]
+        choose_seasons: bool,
     },
 }
 
@@ -43,7 +51,7 @@ fn check_download_url(s: &str) -> crate::Result<String> {
 
 pub(crate) async fn run() -> crate::Result<()> {
     CLI.set(Cli::parse()).unwrap();
-    
+
     match &cli().command {
         Some(Commands::Login { console }) => {
             user::login(console).await?;
@@ -51,7 +59,12 @@ pub(crate) async fn run() -> crate::Result<()> {
         Some(Commands::User) => {
             user::user_info().await?;
         }
-        Some(Commands::Download { url, resume: _ }) => {
+        Some(Commands::Download {
+            url,
+            resume: _,
+            parse_input_url: _,
+            choose_seasons:_,
+        }) => {
             download::download(url.clone()).await?;
         }
         None => {
@@ -65,8 +78,40 @@ fn cli() -> &'static Cli {
     CLI.get().unwrap()
 }
 pub(crate) fn resume_download_value() -> bool {
-    if let Some(Commands::Download { url: _, resume }) = cli().command {
+    if let Some(Commands::Download {
+        url: _,
+        resume,
+        parse_input_url: _,
+        choose_seasons:_,
+    }) = cli().command
+    {
         return resume;
+    }
+    false
+}
+
+pub(crate) fn parse_input_url_value() -> bool {
+    if let Some(Commands::Download {
+        url: _,
+        resume: _,
+        parse_input_url,
+        choose_seasons:_,
+    }) = cli().command
+    {
+        return parse_input_url;
+    }
+    false
+}
+
+pub(crate) fn choose_seasons_value() -> bool {
+    if let Some(Commands::Download {
+        url: _,
+        resume: _,
+        parse_input_url:_,
+        choose_seasons,
+    }) = cli().command
+    {
+        return choose_seasons;
     }
     false
 }

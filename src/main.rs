@@ -1,15 +1,17 @@
 pub(crate) use anyhow::Result;
 
-mod app;
-mod user;
-mod local;
-mod entities;
+mod cli;
 mod download;
+mod entities;
 mod ffmpeg;
-
+mod local;
+mod user;
 
 #[tokio::main]
-async fn main(){
-    app::run().await.unwrap();
+async fn main() {
+    if let Err(e) = ffmpeg::ffmpeg_run_version() {
+        println!("{}", e);
+        panic!("{}", e)
+    }
+    cli::run().await.unwrap();
 }
-

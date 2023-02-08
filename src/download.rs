@@ -1,10 +1,11 @@
-use crate::{app, ffmpeg, local, user};
+use crate::{cli, ffmpeg, local, user};
 use anyhow::{Context, Ok};
-use bilirust::{Audio, Video, FNVAL_DASH, FNVAL_MP4, VIDEO_QUALITY_4K};
-use console::{style, Emoji};
+use bilirust::{Audio, Ss, SsState, Video, FNVAL_DASH, FNVAL_MP4, VIDEO_QUALITY_4K};
+use console::Emoji;
 use dialoguer::Select;
 use futures::stream::TryStreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::path::{Path, PathBuf};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
@@ -40,9 +41,13 @@ pub(crate) async fn download(url: String) -> crate::Result<()> {
             _ => return Err(anyhow::Error::msg("resolve short links error")),
         }
     }
-    //解析bv链接
+    //下载bv链接
     if let Some(find) = BV_PATTERN.find(url.as_str()) {
         return download_bv((&url[find.start()..find.end()]).to_string()).await;
+    }
+    //下载系列 动漫 视频
+    if let Some(find) = SERIES_PATTERN.find(url.as_str()) {
+        return download_series((&(url[find.start()..find.end()])).to_owned(), url).await;
     }
     //下载用户的合集
     if let Some(find) = USER_COLLECTION_DETAIL_PATTERN.captures(url.as_str()) {
@@ -50,6 +55,137 @@ pub(crate) async fn download(url: String) -> crate::Result<()> {
         let sid: i64 = find.get(2).unwrap().as_str().parse().unwrap();
         return download_collection_detail(mid, sid).await;
     }
+    Ok(())
+}
+
+async fn download_series(id: String, url: String) -> crate::Result<()> {
+    let client = user::login_client().await?;
+
+    println!();
+    println!("{}匹配到合集 : {}", Emoji("✨", ""), id);
+
+    let ss_state = if cli::parse_input_url_value() {
+        client.videos_info_by_url(url).await?
+    } else {
+        client.videos_info(id.clone()).await?
+    };
+
+    println!("  系列名称 : {}", ss_state.media_info.series);
+    println!(
+        "  包含番剧 : {} ",
+        ss_state
+            .ss_list
+            .iter()
+            .map(|i| i.title.as_str())
+            .join(" / ")
+    );
+
+    let folder = PathBuf::from(local::allowed_file_name(
+        ss_state.media_info.series.as_str(),
+    ));
+
+    println!("  保存位置 : {}", folder.to_str().unwrap());
+
+    tokio::fs::create_dir_all(folder.as_path()).await?;
+
+    //获得下载的合集id
+    let fetch_ids = if cli::choose_seasons_value() {
+        let titles: Vec<String> = ss_state
+            .ss_list
+            .iter()
+            .map(|x| format!("{} ({})", x.id, x.title.as_str()))
+            .collect();
+        let default_selects = vec![true; titles.len()];
+
+        let selects = dialoguer::MultiSelect::new()
+            .with_prompt("请选择要下载的合集")
+            .items(&titles)
+            .defaults(&default_selects)
+            .interact()
+            .unwrap();
+
+        let mut id_list: Vec<i64> = vec![];
+
+        for i in 0..titles.len() {
+            if selects.contains(&i) {
+                id_list.push(ss_state.ss_list[i].id);
+            }
+        }
+        id_list
+    } else {
+        ss_state.ss_list.iter().map(|x| x.id).collect()
+    };
+
+    // 找到所有的ss
+    // 找到所有ss的bv
+    println!();
+    println!("搜索视频");
+    let mut sss: Vec<(Ss, SsState, String)> = vec![];
+    for x in ss_state.ss_list {
+        if !fetch_ids.contains(&x.id) {
+            continue;
+        }
+        let videos_info = client.videos_info(format!("ss{}", x.id)).await.unwrap();
+        let x_dir_name = format!(
+            "{} ({}) {}",
+            x.id,
+            x.title.as_str(),
+            videos_info.media_info.season_title.as_str(),
+        );
+        println!(
+            "  {} : 共 {} 个视频",
+            x_dir_name.as_str(),
+            videos_info.ep_list.len()
+        );
+        sss.push((x, videos_info, x_dir_name));
+    }
+    println!();
+    println!("下载视频");
+    for x in &sss {
+        let ss_folder = folder.join(x.2.as_str());
+        std::fs::create_dir_all(ss_folder.as_path()).unwrap();
+
+        for ep in &x.1.ep_list {
+            let name = format!("{}. ({}) {}", ep.i, ep.title_format, ep.long_title);
+            let name = local::allowed_file_name(&name);
+            println!();
+            println!("{}", name);
+            let audio_file = ss_folder.join(format!("{}.audio", name));
+            let video_file = ss_folder.join(format!("{}.video", name));
+            let mix_file = ss_folder.join(format!("{}.mp4", name));
+            if mix_file.exists() {
+                continue;
+            }
+            let media_url = client
+                .bv_download_url(
+                    ep.bvid.clone(),
+                    ep.cid.clone(),
+                    FNVAL_DASH,
+                    VIDEO_QUALITY_4K,
+                )
+                .await?;
+            let audio_url = media_url.dash.audio.first().unwrap().base_url.as_str();
+            let video_url = media_url.dash.video.first().unwrap().base_url.as_str();
+            //下载
+            down_file_to(video_url, &video_file, "下载视频").await;
+            println!("{}下载视频完成", Emoji("🚚 ", ""));
+            down_file_to(audio_url, &audio_file, "下载音频").await;
+            println!("{}下载音频完成", Emoji("🚚 ", ""));
+
+            println!("开始合并视频：{}", format!("{}.mp4", name));
+            ffmpeg::ffmpeg_merge_file(
+                vec![video_file.to_str().unwrap(), audio_file.to_str().unwrap()],
+                mix_file.to_str().unwrap(),
+            )
+            .unwrap();
+            println!("{}合并视频完成", Emoji("✨", ""));
+            let _ = std::fs::remove_file(&audio_file);
+            let _ = std::fs::remove_file(&video_file);
+            println!("{}完成数据清理", Emoji("🚚 ", ""));
+        }
+    }
+    println!();
+    println!("{}全部完成", Emoji("✨", ""));
     Ok(())
 }
 
@@ -99,7 +235,7 @@ async fn download_collection_detail(mid: i64, sid: i64) -> crate::Result<()> {
             down_file_to(audio_url, &audio_file, "下载音频").await;
             println!("{}下载音频完成", Emoji("🚚 ", ""));
 
-            println!("开始合并视频：{}",format!("{}.mp4",name));
+            println!("开始合并视频：{}", format!("{}.mp4", name));
             ffmpeg::ffmpeg_merge_file(
                 vec![video_file.to_str().unwrap(), audio_file.to_str().unwrap()],
                 mix_file.to_str().unwrap(),
@@ -236,7 +372,7 @@ async fn download_bv(bv: String) -> crate::Result<()> {
             down_file_to(&audio.base_url, &audio_file, "下载音频").await;
             println!("{}下载音频完成", Emoji("🚚 ", ""));
 
-            println!("开始合并视频：{}",format!("{}.mp4",name));
+            println!("开始合并视频：{}", format!("{}.mp4", name));
             ffmpeg::ffmpeg_merge_file(
                 vec![video_file.to_str().unwrap(), audio_file.to_str().unwrap()],
                 mix_file.to_str().unwrap(),
@@ -254,7 +390,7 @@ async fn download_bv(bv: String) -> crate::Result<()> {
 }
 
 async fn down_file_to(url: &str, file: &Path, title: &str) {
-    let checkpoint = if app::resume_download_value() && file.exists() {
+    let checkpoint = if cli::resume_download_value() && file.exists() {
         file.metadata().unwrap().len()
     } else {
         0

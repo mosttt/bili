@@ -1348,6 +1348,7 @@ dependencies = [
  "futures",
  "image",
  "indicatif",
+ "itertools",
  "lazy_static",
  "once_cell",
  "opener",
