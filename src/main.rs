@@ -5,6 +5,7 @@ mod user;
 mod local;
 mod entities;
 mod download;
+mod ffmpeg;
 
 
 #[tokio::main]

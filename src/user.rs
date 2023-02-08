@@ -1,12 +1,11 @@
-use qrcode::QrCode;
-use tokio::time;
-use console::{Emoji, style};
-use std::process::exit;
-use std::time::Duration;
-use bilirust::{from_str, WebToken};
-use image::Luma;
 use crate::local;
-
+use bilirust::{from_str, WebToken};
+use console::{style, Emoji};
+use image::Luma;
+use qrcode::QrCode;
+use std::time::Duration;
+use std::{path::Path, process::exit};
+use tokio::time;
 
 pub(crate) async fn login(is_console: &bool) -> crate::Result<()> {
     let client = bilirust::Client::new();
@@ -17,9 +16,8 @@ pub(crate) async fn login(is_console: &bool) -> crate::Result<()> {
     } else {
         let code = QrCode::new(qr_data.url.clone().as_str().as_bytes()).unwrap();
         let image = code.render::<Luma<u8>>().build();
-        let mut path = crate::local::current_exe_directory();
-        path.push("qr.png");
-        image.save(path.as_path()).unwrap();
+        let path = Path::new("qr.png");
+        image.save(path).unwrap();
         opener::open(path.as_os_str()).unwrap();
     }
     println!("{}等待扫码中...", Emoji("🚚 ", ""));
