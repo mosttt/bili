@@ -154,6 +154,7 @@ async fn download_series(id: String, url: String) -> crate::Result<()> {
             let video_file = ss_folder.join(format!("{}.video", name));
             let mix_file = ss_folder.join(format!("{}.mp4", name));
             if mix_file.exists() {
+                println!("已存在：{}", name);
                 continue;
             }
             let media_url = client
