@@ -1,5 +1,6 @@
 use crate::{download, user};
 use clap::{CommandFactory, Parser, Subcommand};
+use dialoguer::Input;
 use once_cell::sync::OnceCell;
 
 static CLI: OnceCell<Cli> = OnceCell::new();
@@ -26,7 +27,7 @@ enum Commands {
     Download {
         /// url to download from bilibili
         #[arg(value_parser = check_download_url)]
-        url: String,
+        url: Option<String>,
 
         /// 断点续传，必须选择和上次一样的清晰度，否则会出现视频无法使用的情况。
         #[arg(short,long,action = clap::ArgAction::SetTrue)]
@@ -50,7 +51,7 @@ fn check_download_url(s: &str) -> crate::Result<String> {
 }
 
 pub(crate) async fn run() -> crate::Result<()> {
-    CLI.set(Cli::parse()).unwrap();
+    CLI.set(Cli::parse())?;
 
     match &cli().command {
         Some(Commands::Login { console }) => {
@@ -63,13 +64,23 @@ pub(crate) async fn run() -> crate::Result<()> {
             url,
             resume: _,
             parse_input_url: _,
-            choose_seasons:_,
+            choose_seasons: _,
         }) => {
-            download::download(url.clone()).await?;
+            let url = if let Some(url) = url {
+                url.to_string()
+            } else {
+                check_download_url(
+                    Input::<String>::new()
+                        .with_prompt("请输入视频网址")
+                        .interact_text()?
+                        .as_str(),
+                )?
+            };
+            download::download(url).await?;
         }
         None => {
             let mut factory = Cli::command();
-            factory.print_help().unwrap();
+            factory.print_help()?;
         }
     }
     Ok(())
@@ -82,7 +93,7 @@ pub(crate) fn resume_download_value() -> bool {
         url: _,
         resume,
         parse_input_url: _,
-        choose_seasons:_,
+        choose_seasons: _,
     }) = cli().command
     {
         return resume;
@@ -95,7 +106,7 @@ pub(crate) fn parse_input_url_value() -> bool {
         url: _,
         resume: _,
         parse_input_url,
-        choose_seasons:_,
+        choose_seasons: _,
     }) = cli().command
     {
         return parse_input_url;
@@ -107,7 +118,7 @@ pub(crate) fn choose_seasons_value() -> bool {
     if let Some(Commands::Download {
         url: _,
         resume: _,
-        parse_input_url:_,
+        parse_input_url: _,
         choose_seasons,
     }) = cli().command
     {
