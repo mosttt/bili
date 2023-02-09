@@ -51,7 +51,7 @@ fn check_download_url(s: &str) -> crate::Result<String> {
 }
 
 pub(crate) async fn run() -> crate::Result<()> {
-    CLI.set(Cli::parse())?;
+    CLI.set(Cli::parse()).unwrap();
 
     match &cli().command {
         Some(Commands::Login { console }) => {
