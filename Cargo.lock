@@ -156,6 +156,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
 
 [[package]]
+name = "bili"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "async_once",
+ "bilirust",
+ "clap 4.1.4",
+ "console",
+ "dialoguer",
+ "dirs",
+ "futures",
+ "image",
+ "indicatif",
+ "itertools",
+ "lazy_static",
+ "once_cell",
+ "opener",
+ "openssl",
+ "qr2term",
+ "qrcode",
+ "regex",
+ "reqwest",
+ "rsmpeg",
+ "sea-orm",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "bilirust"
 version = "0.1.0"
 source = "git+https://github.com/mosttt/bilirust.git?branch=master#87d3efdf9efb731228c55f1e61ba5e2a50ea821e"
@@ -1331,37 +1362,6 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.42.0",
-]
-
-[[package]]
-name = "my-bili-cil"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "async_once",
- "bilirust",
- "clap 4.1.4",
- "console",
- "dialoguer",
- "dirs",
- "futures",
- "image",
- "indicatif",
- "itertools",
- "lazy_static",
- "once_cell",
- "opener",
- "openssl",
- "qr2term",
- "qrcode",
- "regex",
- "reqwest",
- "rsmpeg",
- "sea-orm",
- "serde_json",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]
