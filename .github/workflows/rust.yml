@@ -38,7 +38,14 @@ jobs:
           use-cross: true
           command: build
           args: --release --target=${{ matrix.target }}
-      - uses: actions/upload-artifact@v3
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: ${{ matrix.target }}.zip
+#          path: target/${{ matrix.target }}/release/${{ matrix.generate_name }}
+      - name: upload-release
+        uses: svenstaro/upload-release-action@v2
         with:
-          name: ${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/${{ matrix.generate_name }}
+          repo_token: ${{ secrets.RELEASE_TOKEN }}
+          file: target/${{ matrix.target }}/release/${{ matrix.generate_name }}
+          asset_name: ${{ matrix.target }}-${{ github.ref_name }}-${{ matrix.generate_name }}
+          tag: ${{ github.ref }}
