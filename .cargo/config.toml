@@ -1,0 +1,8 @@
+
+##静态编译
+#x64软件
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+#x86软件
+[target.i686-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
