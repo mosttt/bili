@@ -22,11 +22,11 @@ jobs:
           - x86_64-pc-windows-gnu
           - i686-pc-windows-gnu
         include:
-          - generate_name: ${{env.GENERATE_NAME}}
+          - generate_name: ${{ env.GENERATE_NAME }}
           - target: x86_64-pc-windows-gnu
-            generate_name: ${{env.GENERATE_NAME}}.exe
+            generate_name: ${{ env.GENERATE_NAME }}.exe
           - target: i686-pc-windows-gnu
-            generate_name: ${{env.GENERATE_NAME}}.exe
+            generate_name: ${{ env.GENERATE_NAME }}.exe
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
