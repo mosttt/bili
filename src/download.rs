@@ -349,14 +349,6 @@ async fn download_bv(bv: String) -> crate::Result<()> {
             //构建路径
             let name = local::allowed_file_name(&bv_info.title);
 
-            // let mut video_file = local::current_exe_directory();
-            // let mut audio_file = local::current_exe_directory();
-            // let mut mix_file = local::current_exe_directory();
-
-            // video_file.push(format!("{}.video", name));
-            // audio_file.push(format!("{}.audio", name));
-            // mix_file.push(format!("{}.mp4", name));
-
             let video_file = PathBuf::from(format!("{}.video", name));
             let audio_file = PathBuf::from(format!("{}.audio", name));
             let mix_file = PathBuf::from(format!("{}.mp4", name));
@@ -384,7 +376,16 @@ async fn download_bv(bv: String) -> crate::Result<()> {
             let _ = std::fs::remove_file(&video_file);
             println!("{}完成数据清理", Emoji("🚚 ", ""));
         }
-        "mp4" => {}
+        "mp4" => {
+            let name = local::allowed_file_name(&bv_info.title);
+                let mp4_file = PathBuf::from(format!("{}.mp4", name));
+                println!("下载到文件 : {}", mp4_file.display());
+                if mp4_file.exists() {
+                    panic!("文件已存在");
+                }
+                down_file_to(&media_url.durl.first().unwrap().url, &mp4_file, "下载中").await;
+                println!("下载完成");
+        }
         _ => panic!("e2"),
     }
     Ok(())
