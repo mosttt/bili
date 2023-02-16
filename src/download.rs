@@ -473,7 +473,7 @@ fn choose_video_format() -> &'static str {
     ["dash", "mp4"][Select::new()
         .with_prompt("选择视频格式")
         .default(0)
-        .items(&["dash (高清)", "mp4 (低清)"])
+        .items(&["dash (高清)", "mp4"])
         .interact()
         .unwrap()]
 }
