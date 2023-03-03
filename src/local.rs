@@ -33,7 +33,7 @@ fn cfg_local_dir() -> String {
         dirs::home_dir().unwrap().to_str().unwrap(),
         "Library",
         "Application Support",
-        "bili-cli",
+        "bili",
     ])
 }
 
@@ -44,7 +44,7 @@ fn cfg_local_dir() -> String {
         dirs::home_dir().unwrap().to_str().unwrap(),
         "AppData",
         "Roaming",
-        "bili-cli",
+        "bili",
     ])
 }
 
@@ -53,7 +53,7 @@ fn cfg_local_dir() -> String {
 fn cfg_local_dir() -> String {
     join_paths(vec![
         dirs::home_dir().unwrap().to_str().unwrap(),
-        ".bili-cli",
+        ".bili",
     ])
 }
 
